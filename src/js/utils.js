@@ -23,18 +23,100 @@
  * ```
  * */
 export function calcTileType(index, boardSize) {
-  // TODO: ваш код будет тут
-  return 'center';
+	const matrixCoordinate = translateToMatrixCoordinate(index, boardSize);
+	const maxIndexInLine = boardSize - 1;
+	let position = "center";
+
+	if (matrixCoordinate.x === 0 && matrixCoordinate.y === 0) {
+		position = "top-left";
+	} else if (matrixCoordinate.x === maxIndexInLine && matrixCoordinate.y === 0) {
+		position = "top-right";
+	} else if (matrixCoordinate.x === 0 && matrixCoordinate.y === maxIndexInLine) {
+		position = "bottom-left";
+	} else if (matrixCoordinate.x === maxIndexInLine && matrixCoordinate.y === maxIndexInLine) {
+		position = "bottom-right";
+	} else if (matrixCoordinate.x !== maxIndexInLine && matrixCoordinate.x !== 0 && matrixCoordinate.y === 0) {
+		position = "top";
+	} else if (
+		matrixCoordinate.x !== maxIndexInLine &&
+		matrixCoordinate.x !== 0 &&
+		matrixCoordinate.y === maxIndexInLine
+	) {
+		position = "bottom";
+	} else if (matrixCoordinate.x === 0 && matrixCoordinate.y !== maxIndexInLine && matrixCoordinate.y !== 0) {
+		position = "left";
+	} else if (
+		matrixCoordinate.x === maxIndexInLine &&
+		matrixCoordinate.y !== maxIndexInLine &&
+		matrixCoordinate.y !== 0
+	) {
+		position = "right";
+	}
+	// TODO: ваш код будет тут
+	return position;
+}
+
+export function getCharacterTooltip(character) {
+	return `🎖${character.level} ⚔${character.attack} 🛡${character.defence} ❤${character.health}"`;
+}
+
+export function getCharacterByPosition(position, characters) {
+	return characters.find((character) => character.position === position);
+}
+
+export function randomIntFromInterval(min, max) {
+	return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+export function redrawCharactersPositions( firstTeamPositions, secondTeamPositions, gamePlay) {
+	gamePlay.redrawPositions([...firstTeamPositions, ...secondTeamPositions]);
+}
+
+export function translateToMatrixCoordinate(index, boardSize) {
+	const abscissa = index % boardSize;
+	const ordinate = (index - abscissa) / boardSize;
+
+	return {
+		x: abscissa,
+		y: ordinate,
+	};
+}
+
+function translateMatrixCoordinateToPosition(x, y, boardSize) {
+	const position = boardSize * y + x;
+	return position;
+}
+
+function getAllRandomPositionForPlayer(isFirstPlayer, boardSize) {
+	const positions = [];
+	const initX = isFirstPlayer ? 0 : boardSize - 2;
+	const maxXCondition = isFirstPlayer ? 2 : boardSize;
+
+	for (let y = 0; y < boardSize; y++) {
+		for (let x = initX; x < maxXCondition; x++) {
+			positions.push(translateMatrixCoordinateToPosition(x, y, boardSize));
+		}
+	}
+	return positions;
+}
+
+export function getRandomPosition(isFirstPlayer, boardSize, excludedPositions = []) {
+	const allRandomPositions = getAllRandomPositionForPlayer(isFirstPlayer, boardSize);
+	const filteredPositions = allRandomPositions.filter(function (value) {
+		return !excludedPositions.includes(value);
+	});
+
+	return filteredPositions[randomIntFromInterval(0, filteredPositions.length - 1)];
 }
 
 export function calcHealthLevel(health) {
-  if (health < 15) {
-    return 'critical';
-  }
+	if (health < 15) {
+		return "critical";
+	}
 
-  if (health < 50) {
-    return 'normal';
-  }
+	if (health < 50) {
+		return "normal";
+	}
 
-  return 'high';
+	return "high";
 }

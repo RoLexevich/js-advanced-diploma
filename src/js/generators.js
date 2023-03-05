@@ -1,3 +1,7 @@
+import { randomIntFromInterval } from "./utils";
+import Team from "./Team";
+import { Bowman, Swordsman, Undead, Daemon, Magician, Vampire } from "./characters";
+
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со
  * случайным уровнем от 1 до maxLevel
@@ -9,7 +13,12 @@
  *
  */
 export function* characterGenerator(allowedTypes, maxLevel) {
-  // TODO: write logic here
+	while (true) {
+		const randomType = allowedTypes[randomIntFromInterval(0, allowedTypes.length - 1)];
+		const randomLevel = randomIntFromInterval(1, maxLevel);
+
+		yield new randomType(randomLevel);
+	}
 }
 
 /**
@@ -20,5 +29,10 @@ export function* characterGenerator(allowedTypes, maxLevel) {
  * @returns экземпляр Team, хранящий экземпляры персонажей. Количество персонажей в команде - characterCount
  * */
 export function generateTeam(allowedTypes, maxLevel, characterCount) {
-  // TODO: write logic here
+	const characters = [];
+	for (let index = 0; index < characterCount; index++) {
+		characters.push(characterGenerator(allowedTypes, maxLevel).next().value);
+	}
+	return new Team(characters);
+	// TODO: write logic here
 }

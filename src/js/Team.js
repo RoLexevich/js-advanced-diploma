@@ -1,3 +1,5 @@
+import PositionedCharacter from "./PositionedCharacter";
+import { getRandomPosition } from "./utils";
 /**
  * Класс, представляющий персонажей команды
  *
@@ -12,5 +14,32 @@
  * ```
  * */
 export default class Team {
-  // TODO: write your logic here
+	constructor(characters, name) {
+		this.characters = characters;
+		this.name = name;
+
+		characters.forEach((character)=>{
+			character.team = this;
+		})
+	}
+	generateTeamPositions(isFirstPlayer, boardSize) {
+		const positionedCharacters = [];
+		const excludedPositions = [];
+		this.characters.forEach((character) => {
+			const position = getRandomPosition(isFirstPlayer, boardSize, excludedPositions);
+			excludedPositions.push(position);
+			character.position = position;
+			positionedCharacters.push(new PositionedCharacter(character, position));
+		});
+		return positionedCharacters;
+	}
+
+	getTeamPositions(){
+		const positionedCharacters = [];
+		this.characters.forEach((character) => {
+			positionedCharacters.push(new PositionedCharacter(character, character.position));
+		});
+		return positionedCharacters;
+	}
+	// TODO: write your logic here
 }
