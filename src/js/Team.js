@@ -18,10 +18,11 @@ export default class Team {
 		this.characters = characters;
 		this.name = name;
 
-		characters.forEach((character)=>{
+		characters.forEach((character) => {
 			character.team = this;
-		})
+		});
 	}
+
 	generateTeamPositions(isFirstPlayer, boardSize) {
 		const positionedCharacters = [];
 		const excludedPositions = [];
@@ -34,7 +35,7 @@ export default class Team {
 		return positionedCharacters;
 	}
 
-	getTeamPositions(){
+	getTeamPositions() {
 		const positionedCharacters = [];
 		this.characters.forEach((character) => {
 			positionedCharacters.push(new PositionedCharacter(character, character.position));

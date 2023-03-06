@@ -2,7 +2,9 @@ import GamePlay from "./GamePlay";
 import themes from "./themes";
 import cursors from "./cursors";
 import { getCharacterTooltip, getCharacterByPosition, redrawCharactersPositions } from "./utils";
-import { Bowman, Swordsman, Undead, Daemon, Magician, Vampire } from "./characters";
+import {
+ Bowman, Swordsman, Undead, Daemon, Magician, Vampire,
+} from "./characters";
 import { generateTeam } from "./generators";
 
 export default class GameController {
@@ -13,20 +15,18 @@ export default class GameController {
 
 	init() {
 		const container = document.getElementById("game-container");
-
 		this.gamePlay.bindToDOM(container);
 		this.gamePlay.drawUi(themes.prairie);
 
 		const firstPlayerTypes = [Bowman, Swordsman, Magician];
 		const secondPlayerTypes = [Undead, Vampire, Daemon];
-
 		this.firstTeam = generateTeam(firstPlayerTypes, 3, 4);
 		this.secondTeam = generateTeam(secondPlayerTypes, 3, 4);
 
 		redrawCharactersPositions(
 			this.firstTeam.generateTeamPositions(true, this.gamePlay.boardSize),
 			this.secondTeam.generateTeamPositions(false, this.gamePlay.boardSize),
-			this.gamePlay
+			this.gamePlay,
 		);
 
 		this.initGameListeners();
@@ -37,9 +37,11 @@ export default class GameController {
 		this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
 		this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
 	}
+
 	updateCharactersPositions() {
 		redrawCharactersPositions(this.firstTeam.getTeamPositions(), this.secondTeam.getTeamPositions(), this.gamePlay);
 	}
+
 	onCellClick(position) {
 		const character = getCharacterByPosition(position, this.firstTeam.characters);
 		const enemyCharacter = character ? null : getCharacterByPosition(position, this.secondTeam.characters);
@@ -56,23 +58,15 @@ export default class GameController {
 				this.selectedCharacter.canInteractWithPosition(
 					enemyCharacter.position,
 					this.gamePlay.boardSize,
-					"attackDistance"
+					"attackDistance",
 				)
 			) {
 				const damage = Math.max(
 					this.selectedCharacter.attack - enemyCharacter.defence,
-					this.selectedCharacter.attack * 0.1
+					this.selectedCharacter.attack * 0.1,
 				);
 				this.gamePlay.showDamage(position, damage).then((resolve) => {
-					console.log("");
-					console.log("PRINT enemyCharacter.health");
-					console.log(enemyCharacter.health);
-					console.log("++++++++++++++++++++++++++++++++++++++++++++++++");
 					enemyCharacter.health -= damage;
-					console.log("");
-					console.log("PRINT enemyCharacter.health");
-					console.log(enemyCharacter.health);
-					console.log("++++++++++++++++++++++++++++++++++++++++++++++++");
 					this.updateCharactersPositions();
 				});
 			} else if (this.selectedCharacter.canInteractWithPosition(position, this.gamePlay.boardSize)) {
@@ -89,7 +83,7 @@ export default class GameController {
 	}
 
 	onCellEnter(position) {
-		const selectedCharacter = this.selectedCharacter;
+		const { selectedCharacter } = this;
 		const character = getCharacterByPosition(position, [
 			...this.firstTeam.characters,
 			...this.secondTeam.characters,
@@ -109,13 +103,11 @@ export default class GameController {
 				}
 			} else if (selectedCharacter === character || selectedCharacter.team === character.team) {
 				this.gamePlay.setCursor(cursors.pointer);
+			} else if (selectedCharacter.canInteractWithPosition(position, this.gamePlay.boardSize, "attackDistance")) {
+				this.gamePlay.setCursor(cursors.auto);
+				this.gamePlay.selectCell(position, "red");
 			} else {
-				if (selectedCharacter.canInteractWithPosition(position, this.gamePlay.boardSize, "attackDistance")) {
-					this.gamePlay.setCursor(cursors.auto);
-					this.gamePlay.selectCell(position, "red");
-				} else {
-					this.gamePlay.setCursor(cursors.notallowed);
-				}
+				this.gamePlay.setCursor(cursors.notallowed);
 			}
 		}
 	}
@@ -123,7 +115,7 @@ export default class GameController {
 	onCellLeave(position) {
 		this.gamePlay.hideCellTooltip(position);
 
-		if (this.selectedCharacter?.position !== position) {
+		if (this.selectedCharacter.position !== position) {
 			this.gamePlay.deselectCell(position);
 		}
 	}

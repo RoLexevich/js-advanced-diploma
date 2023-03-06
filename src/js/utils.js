@@ -22,6 +22,16 @@
  * calcTileType(7, 7); // 'left'
  * ```
  * */
+export function translateToMatrixCoordinate(index, boardSize) {
+	const abscissa = index % boardSize;
+	const ordinate = (index - abscissa) / boardSize;
+
+	return {
+		x: abscissa,
+		y: ordinate,
+	};
+}
+
 export function calcTileType(index, boardSize) {
 	const matrixCoordinate = translateToMatrixCoordinate(index, boardSize);
 	const maxIndexInLine = boardSize - 1;
@@ -68,18 +78,8 @@ export function randomIntFromInterval(min, max) {
 	return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
-export function redrawCharactersPositions( firstTeamPositions, secondTeamPositions, gamePlay) {
+export function redrawCharactersPositions(firstTeamPositions, secondTeamPositions, gamePlay) {
 	gamePlay.redrawPositions([...firstTeamPositions, ...secondTeamPositions]);
-}
-
-export function translateToMatrixCoordinate(index, boardSize) {
-	const abscissa = index % boardSize;
-	const ordinate = (index - abscissa) / boardSize;
-
-	return {
-		x: abscissa,
-		y: ordinate,
-	};
 }
 
 function translateMatrixCoordinateToPosition(x, y, boardSize) {
@@ -102,9 +102,7 @@ function getAllRandomPositionForPlayer(isFirstPlayer, boardSize) {
 
 export function getRandomPosition(isFirstPlayer, boardSize, excludedPositions = []) {
 	const allRandomPositions = getAllRandomPositionForPlayer(isFirstPlayer, boardSize);
-	const filteredPositions = allRandomPositions.filter(function (value) {
-		return !excludedPositions.includes(value);
-	});
+	const filteredPositions = allRandomPositions.filter((value) => !excludedPositions.includes(value));
 
 	return filteredPositions[randomIntFromInterval(0, filteredPositions.length - 1)];
 }

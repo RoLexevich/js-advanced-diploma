@@ -1,6 +1,8 @@
 import { randomIntFromInterval } from "./utils";
 import Team from "./Team";
-import { Bowman, Swordsman, Undead, Daemon, Magician, Vampire } from "./characters";
+import {
+ Bowman, Swordsman, Undead, Daemon, Magician, Vampire,
+} from "./characters";
 
 /**
  * Формирует экземпляр персонажа из массива allowedTypes со

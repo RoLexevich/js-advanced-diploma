@@ -84,7 +84,7 @@ export default class GamePlay {
 			const healthIndicatorEl = document.createElement("div");
 			healthIndicatorEl.classList.add(
 				"health-level-indicator",
-				`health-level-indicator-${calcHealthLevel(position.character.health)}`
+				`health-level-indicator-${calcHealthLevel(position.character.health)}`,
 			);
 			healthIndicatorEl.style.width = `${position.character.health}%`;
 			healthEl.appendChild(healthIndicatorEl);
