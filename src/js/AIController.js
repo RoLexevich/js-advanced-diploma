@@ -24,7 +24,64 @@ export default class AIController {
 		}
 	}
 
-	attackStrategy() {}
+	attackStrategy() {
+		const { boardSize } = this.gamePlay;
+		const playerChar = this.getNearEnemy();
+		const { position: playerPos } = playerChar;
+		const aiChar = this.getNearAIToPlayer(playerChar);
+		const canAttack = aiChar.canInteractWithPosition(playerPos, boardSize, "attackDistance");
+
+		if (canAttack) {
+			const damage = getDamage(aiChar, playerChar);
+			this.gamePlay.preventAction = true;
+			this.gamePlay.showDamage(playerPos, damage).then(() => {
+				this.gamePlay.preventAction = false;
+
+				playerChar.health -= damage;
+				redrawCharactersPositions(
+					this.playerTeam.getTeamPositions(),
+					this.aiTeam.getTeamPositions(),
+					this.gamePlay
+				);
+			});
+		} else {
+			aiChar.position = this.findPath(aiChar, playerChar.position);
+
+			redrawCharactersPositions(
+				this.playerTeam.getTeamPositions(),
+				this.aiTeam.getTeamPositions(),
+				this.gamePlay
+			);
+		}
+	}
+
+	getNearEnemy() {
+		const { boardSize } = this.gamePlay;
+		const { characters: playerChars } = this.playerTeam;
+		const { characters: aiChars } = this.aiTeam;
+
+		return playerChars.reduce((playerDistObj, playerChar) => {
+			const dist = aiChars.reduce((curDistance, aiChar) => {
+				const distance = getDistanceBetweenPositions(aiChar.position, playerChar.position, boardSize);
+				return distance > curDistance ? curDistance : distance;
+			}, getDistanceBetweenPositions(aiChars[0].position, playerChar.position, boardSize));
+
+			return !playerDistObj.dist || playerDistObj.dist > dist ? { playerChar, dist } : { ...playerDistObj };
+		}, {}).playerChar;
+	}
+
+	getNearAIToPlayer(playerChar) {
+		const { boardSize } = this.gamePlay;
+		const { characters: aiCharacters } = this.aiTeam;
+
+		return aiCharacters.reduce((char1, char2) => {
+			const distance1 =
+				getDistanceBetweenPositions(char1.position, playerChar.position, boardSize) - char1.attackDistance;
+			const distance2 =
+				getDistanceBetweenPositions(char2.position, playerChar.position, boardSize) - char2.attackDistance;
+			return distance1 > distance2 ? char2 : char1;
+		}, aiCharacters[0]);
+	}
 
 	defenceStrategy() {
 		const aiCharacters = this.aiTeam.characters;
@@ -38,7 +95,7 @@ export default class AIController {
 			aiCharacters.find((character) => {
 				const canInteract = character.canInteractWithPosition(attackerPosition, boardSize, "attackDistance");
 				let result = false;
-				
+
 				if (canDefense) {
 					result = canInteract && character.attack > defensive.attack;
 				} else if (canInteract) {
@@ -63,15 +120,10 @@ export default class AIController {
 				);
 			});
 		} else {
-			const nearestChar = aiCharacters.reduce((char1, char2) => {
-				const distance1 =
-					getDistanceBetweenPositions(char1.position, attacker.position, boardSize) - char1.attackDistance;
-				const distance2 =
-					getDistanceBetweenPositions(char2.position, attacker.position, boardSize) - char2.attackDistance;
-				return distance1 > distance2 ? char2 : char1;
-			}, aiCharacters[0]);
+			const nearEnemy = this.getNearEnemy();
+			const nearestChar = this.getNearAIToPlayer(nearEnemy);
 
-			nearestChar.position = this.findPath(nearestChar, attacker.position);
+			nearestChar.position = this.findPath(nearestChar, nearEnemy.position);
 
 			redrawCharactersPositions(
 				this.playerTeam.getTeamPositions(),
@@ -82,7 +134,7 @@ export default class AIController {
 	}
 
 	findPath(char, position2) {
-		const { position: position1, attackDistance } = char;
+		const { position: position1, stepsNumber } = char;
 		const { boardSize } = this.gamePlay;
 		const matrixCoordinate1 = translateToMatrixCoordinate(position1, boardSize);
 		const matrixCoordinate2 = translateToMatrixCoordinate(position2, boardSize);
@@ -92,30 +144,30 @@ export default class AIController {
 		let resultY = matrixCoordinate1.y;
 
 		if (matrixCoordinate1.x > matrixCoordinate2.x) {
-			if (attackDistance >= diffX1X2) {
+			if (stepsNumber >= diffX1X2) {
 				resultX = matrixCoordinate2.x + 1;
 			} else {
-				resultX = matrixCoordinate1.x - attackDistance;
+				resultX = matrixCoordinate1.x - stepsNumber;
 			}
 		} else if (matrixCoordinate1.x < matrixCoordinate2.x) {
-			if (attackDistance >= diffX1X2) {
+			if (stepsNumber >= diffX1X2) {
 				resultX = matrixCoordinate2.x - 1;
 			} else {
-				resultX = matrixCoordinate1.x + attackDistance;
+				resultX = matrixCoordinate1.x + stepsNumber;
 			}
 		}
 
 		if (matrixCoordinate1.y > matrixCoordinate2.y) {
-			if (attackDistance >= diffX1X2) {
+			if (stepsNumber >= diffX1X2) {
 				resultY = matrixCoordinate2.y + 1;
 			} else {
-				resultY = matrixCoordinate1.y - attackDistance;
+				resultY = matrixCoordinate1.y - stepsNumber;
 			}
 		} else if (matrixCoordinate1.y < matrixCoordinate2.y) {
-			if (attackDistance >= diffY1Y2) {
+			if (stepsNumber >= diffY1Y2) {
 				resultY = matrixCoordinate2.y - 1;
 			} else {
-				resultY = matrixCoordinate1.y + attackDistance;
+				resultY = matrixCoordinate1.y + stepsNumber;
 			}
 		}
 		return translateMatrixCoordinateToPosition(resultX, resultY, boardSize);

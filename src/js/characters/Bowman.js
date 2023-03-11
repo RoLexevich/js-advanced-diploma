@@ -7,5 +7,6 @@ export default class Bowman extends Character {
 		this.attackDistance = 2;
 		this.stepsNumber = 2;
 		this.defence = 25;
+		this.updateOnChangeLvl();
 	}
 }
