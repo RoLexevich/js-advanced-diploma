@@ -1,10 +1,15 @@
 import GamePlay from "./GamePlay";
+import AIController from "./AIController";
 import themes from "./themes";
 import cursors from "./cursors";
-import { getCharacterTooltip, getCharacterByPosition, redrawCharactersPositions } from "./utils";
 import {
- Bowman, Swordsman, Undead, Daemon, Magician, Vampire,
-} from "./characters";
+	getCharacterTooltip,
+	getCharacterByPosition,
+	redrawCharactersPositions,
+	getDamage,
+	getDistanceBetweenPositions,
+} from "./utils";
+import { Bowman, Swordsman, Undead, Daemon, Magician, Vampire } from "./characters";
 import { generateTeam } from "./generators";
 
 export default class GameController {
@@ -15,18 +20,21 @@ export default class GameController {
 
 	init() {
 		const container = document.getElementById("game-container");
+		const { boardSize } = this.gamePlay;
 		this.gamePlay.bindToDOM(container);
 		this.gamePlay.drawUi(themes.prairie);
 
-		const firstPlayerTypes = [Bowman, Swordsman, Magician];
-		const secondPlayerTypes = [Undead, Vampire, Daemon];
-		this.firstTeam = generateTeam(firstPlayerTypes, 3, 4);
-		this.secondTeam = generateTeam(secondPlayerTypes, 3, 4);
+		const playerTypes = [Bowman, Swordsman, Magician];
+		//const aiTypes = [Undead, Vampire, Daemon];
+		const aiTypes = [Undead, Undead, Undead];
+		this.playerTeam = generateTeam(playerTypes, 3, 4);
+		this.aiTeam = generateTeam(aiTypes, 3, 4);
+		this.aiController = new AIController(this.playerTeam, this.aiTeam, this.gamePlay);
 
 		redrawCharactersPositions(
-			this.firstTeam.generateTeamPositions(true, this.gamePlay.boardSize),
-			this.secondTeam.generateTeamPositions(false, this.gamePlay.boardSize),
-			this.gamePlay,
+			this.playerTeam.generateTeamPositions(true, boardSize),
+			this.aiTeam.generateTeamPositions(false, boardSize),
+			this.gamePlay
 		);
 
 		this.initGameListeners();
@@ -38,56 +46,70 @@ export default class GameController {
 		this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
 	}
 
-	updateCharactersPositions() {
-		redrawCharactersPositions(this.firstTeam.getTeamPositions(), this.secondTeam.getTeamPositions(), this.gamePlay);
+	completeRound() {
+		redrawCharactersPositions(this.playerTeam.getTeamPositions(), this.aiTeam.getTeamPositions(), this.gamePlay);
+		this.aiController.doAction();
 	}
 
 	onCellClick(position) {
-		const character = getCharacterByPosition(position, this.firstTeam.characters);
-		const enemyCharacter = character ? null : getCharacterByPosition(position, this.secondTeam.characters);
-
+		const character = getCharacterByPosition(position, this.playerTeam.characters);
+		const { selectedCharacter } = this;
+		const enemyCharacter = character ? null : getCharacterByPosition(position, this.aiTeam.characters);
+		if (this.gamePlay.preventAction) {
+			return;
+		}
+		this.aiTeam.characters.forEach((char) => {
+			char.attacker = null;
+		});
 		if (character) {
-			if (this.selectedCharacter) {
-				this.gamePlay.deselectCell(this.selectedCharacter.position);
+			if (selectedCharacter) {
+				this.gamePlay.deselectCell(selectedCharacter.position);
 			}
 			this.selectedCharacter = character;
 			this.gamePlay.selectCell(position);
-		} else if (this.selectedCharacter) {
+		} else if (selectedCharacter) {
 			if (
 				enemyCharacter &&
-				this.selectedCharacter.canInteractWithPosition(
+				selectedCharacter.canInteractWithPosition(
 					enemyCharacter.position,
 					this.gamePlay.boardSize,
-					"attackDistance",
+					"attackDistance"
 				)
 			) {
-				const damage = Math.max(
-					this.selectedCharacter.attack - enemyCharacter.defence,
-					this.selectedCharacter.attack * 0.1,
-				);
-				this.gamePlay.showDamage(position, damage).then((resolve) => {
+				const damage = getDamage(selectedCharacter, enemyCharacter);
+				this.gamePlay.preventAction = true;
+				this.gamePlay.showDamage(position, damage).then(() => {
+					this.gamePlay.preventAction = false;
+
 					enemyCharacter.health -= damage;
-					this.updateCharactersPositions();
+
+					enemyCharacter.attacker = selectedCharacter;
+
+					this.gamePlay.deselectCell(enemyCharacter.position);
+					this.gamePlay.deselectCell(selectedCharacter.position);
+					this.selectedCharacter = null;
+
+					this.completeRound();
 				});
-			} else if (this.selectedCharacter.canInteractWithPosition(position, this.gamePlay.boardSize)) {
-				this.gamePlay.deselectCell(this.selectedCharacter.position);
+			} else if (
+				selectedCharacter.canInteractWithPosition(position, this.gamePlay.boardSize) &&
+				!enemyCharacter
+			) {
+				this.gamePlay.deselectCell(selectedCharacter.position);
 
-				this.selectedCharacter.position = position;
-				this.gamePlay.deselectCell(this.selectedCharacter.position);
-
-				this.updateCharactersPositions();
+				selectedCharacter.position = position;
+				this.gamePlay.deselectCell(selectedCharacter.position);
+				this.selectedCharacter = null;
+				this.completeRound();
 			}
 		} else {
-			GamePlay.showError("В этом поле нет персонажа игрока!");
+			GamePlay.showError("Выберите персонажа!");
 		}
 	}
 
 	onCellEnter(position) {
 		const { selectedCharacter } = this;
-		const character = getCharacterByPosition(position, [
-			...this.firstTeam.characters,
-			...this.secondTeam.characters,
-		]);
+		const character = getCharacterByPosition(position, [...this.playerTeam.characters, ...this.aiTeam.characters]);
 
 		if (character) {
 			this.gamePlay.showCellTooltip(getCharacterTooltip(character), position);
@@ -115,7 +137,7 @@ export default class GameController {
 	onCellLeave(position) {
 		this.gamePlay.hideCellTooltip(position);
 
-		if (this.selectedCharacter.position !== position) {
+		if (this.selectedCharacter && this.selectedCharacter.position !== position) {
 			this.gamePlay.deselectCell(position);
 		}
 	}

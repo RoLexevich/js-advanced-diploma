@@ -5,7 +5,7 @@ export default class Bowman extends Character {
 		super(level, "bowman");
 		this.attack = 25;
 		this.attackDistance = 2;
-		this.stepNumber = 2;
+		this.stepsNumber = 2;
 		this.defence = 25;
 	}
 }

@@ -19,7 +19,9 @@ export default class Character {
 		this.level = level;
 		this.attack = 0;
 		this.defence = 0;
-		this.health = 50;
+		this.health = 100;
+		this.stepsNumber = 0;
+		this.attackDistance = 0;
 		this.type = type;
 		// TODO: выбросите исключение, если кто-то использует "new Character()"
 		if (new.target.name === "Character") {
@@ -27,7 +29,7 @@ export default class Character {
 		}
 	}
 
-	canInteractWithPosition(position, boardSize, property = "stepNumber") {
+	canInteractWithPosition(position, boardSize, property = "stepsNumber") {
 		const positionCoordinate = translateToMatrixCoordinate(position, boardSize);
 		const selfPositionCoordinate = translateToMatrixCoordinate(this.position, boardSize);
 		const distance = this[property];

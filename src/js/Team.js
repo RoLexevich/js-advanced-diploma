@@ -23,11 +23,11 @@ export default class Team {
 		});
 	}
 
-	generateTeamPositions(isFirstPlayer, boardSize) {
+	generateTeamPositions(isPlayer, boardSize) {
 		const positionedCharacters = [];
 		const excludedPositions = [];
 		this.characters.forEach((character) => {
-			const position = getRandomPosition(isFirstPlayer, boardSize, excludedPositions);
+			const position = getRandomPosition(isPlayer, boardSize, excludedPositions);
 			excludedPositions.push(position);
 			character.position = position;
 			positionedCharacters.push(new PositionedCharacter(character, position));

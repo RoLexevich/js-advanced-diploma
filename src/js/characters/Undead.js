@@ -5,7 +5,7 @@ export default class Undead extends Character {
 		super(level, "undead");
 		this.attack = 40;
 		this.attackDistance = 1;
-		this.stepNumber = 4;
+		this.stepsNumber = 4;
 		this.defence = 10;
 	}
 }
