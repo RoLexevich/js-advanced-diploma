@@ -14,45 +14,27 @@ export default class AIController {
 	}
 
 	doAction() {
-		const aiCharacters = this.aiTeam.characters;
-		const wasAttack = aiCharacters.some((character) => !!character.attacker);
+		return new Promise((resolve) => {
+			const { boardSize } = this.gamePlay;
+			const playerChar = this.getNearEnemy();
+			const { position: playerPos } = playerChar;
+			const aiChar = this.getNearAIToPlayer(playerChar);
+			const canAttack = aiChar.canInteractWithPosition(playerPos, boardSize, "attackDistance");
 
-		if (wasAttack) {
-			this.defenceStrategy();
-		} else {
-			this.attackStrategy();
-		}
-	}
+			if (canAttack) {
+				const damage = getDamage(aiChar, playerChar);
+				this.gamePlay.preventAction = true;
+				this.gamePlay.showDamage(playerPos, damage).then(() => {
+					this.gamePlay.preventAction = false;
+					playerChar.setHealth(playerChar.health - damage);
+					resolve();
+				});
+			} else {
+				aiChar.position = this.findPath(aiChar, playerChar.position);
 
-	attackStrategy() {
-		const { boardSize } = this.gamePlay;
-		const playerChar = this.getNearEnemy();
-		const { position: playerPos } = playerChar;
-		const aiChar = this.getNearAIToPlayer(playerChar);
-		const canAttack = aiChar.canInteractWithPosition(playerPos, boardSize, "attackDistance");
-
-		if (canAttack) {
-			const damage = getDamage(aiChar, playerChar);
-			this.gamePlay.preventAction = true;
-			this.gamePlay.showDamage(playerPos, damage).then(() => {
-				this.gamePlay.preventAction = false;
-
-				playerChar.health -= damage;
-				redrawCharactersPositions(
-					this.playerTeam.getTeamPositions(),
-					this.aiTeam.getTeamPositions(),
-					this.gamePlay
-				);
-			});
-		} else {
-			aiChar.position = this.findPath(aiChar, playerChar.position);
-
-			redrawCharactersPositions(
-				this.playerTeam.getTeamPositions(),
-				this.aiTeam.getTeamPositions(),
-				this.gamePlay
-			);
-		}
+				resolve();
+			}
+		});
 	}
 
 	getNearEnemy() {
@@ -81,56 +63,6 @@ export default class AIController {
 				getDistanceBetweenPositions(char2.position, playerChar.position, boardSize) - char2.attackDistance;
 			return distance1 > distance2 ? char2 : char1;
 		}, aiCharacters[0]);
-	}
-
-	defenceStrategy() {
-		const aiCharacters = this.aiTeam.characters;
-		const defensive = aiCharacters.find((character) => !!character.attacker);
-		const { attacker } = defensive;
-		const attackerPosition = attacker.position;
-		const { boardSize } = this.gamePlay;
-		const canDefense = defensive.canInteractWithPosition(attackerPosition, boardSize, "attackDistance");
-
-		const respondingCharacter =
-			aiCharacters.find((character) => {
-				const canInteract = character.canInteractWithPosition(attackerPosition, boardSize, "attackDistance");
-				let result = false;
-
-				if (canDefense) {
-					result = canInteract && character.attack > defensive.attack;
-				} else if (canInteract) {
-					result = canInteract;
-				}
-
-				return result;
-			}) || (canDefense ? defensive : null);
-		if (respondingCharacter) {
-			const damage = getDamage(respondingCharacter, attacker);
-
-			this.gamePlay.preventAction = true;
-			this.gamePlay.showDamage(attackerPosition, damage).then(() => {
-				defensive.attacker = null;
-				this.gamePlay.preventAction = false;
-
-				attacker.health -= damage;
-				redrawCharactersPositions(
-					this.playerTeam.getTeamPositions(),
-					this.aiTeam.getTeamPositions(),
-					this.gamePlay
-				);
-			});
-		} else {
-			const nearEnemy = this.getNearEnemy();
-			const nearestChar = this.getNearAIToPlayer(nearEnemy);
-
-			nearestChar.position = this.findPath(nearestChar, nearEnemy.position);
-
-			redrawCharactersPositions(
-				this.playerTeam.getTeamPositions(),
-				this.aiTeam.getTeamPositions(),
-				this.gamePlay
-			);
-		}
 	}
 
 	findPath(char, position2) {

@@ -27,7 +27,7 @@ export default class Character {
 		if (new.target.name === "Character") {
 			throw new Error("Нельзя создавать экземпляр класса Character!");
 		}
-		this.updateOnChangeLvl();
+		this.updateOnInitLvl();
 	}
 
 	canInteractWithPosition(position, boardSize, property = "stepsNumber") {
@@ -42,13 +42,26 @@ export default class Character {
 			selfPositionCoordinate.y - distance <= positionCoordinate.y
 		);
 	}
+	levelUp() {
+		this.level = this.level + 1;
+		this.updateAttrs();
+	}
+	updateAttrs() {
+		const health = 80 + this.health;
 
-	updateOnChangeLvl() {
-		let health = 80 + this.health;
-
+		this.attack = parseInt(Math.max(this.attack, (this.attack * (80 + this.health)) / 100));
+		this.health = health > 100 ? 100 : health;
+	}
+	updateOnInitLvl() {
 		for (let index = 1; index < this.level; index++) {
-			this.attack = Math.max(this.attack, (this.attack * (80 + this.health)) / 100);
-			this.health = health > 100 ? 100 : health;
+			this.updateAttrs();
+		}
+	}
+
+	setHealth(health) {
+		this.health = health;
+		if (health <= 0 && this.team) {
+			this.team.characters = this.team.characters.filter((char) => char.health > 0);
 		}
 	}
 }

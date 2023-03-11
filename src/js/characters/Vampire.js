@@ -7,6 +7,6 @@ export default class Vampire extends Character {
 		this.stepsNumber = 2;
 		this.attackDistance = 2;
 		this.defence = 25;
-		this.updateOnChangeLvl();
+		this.updateOnInitLvl();
 	}
 }

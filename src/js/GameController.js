@@ -17,7 +17,12 @@ export default class GameController {
 		this.gamePlay = gamePlay;
 		this.stateService = stateService;
 	}
-
+	createAI() {
+		const aiTypes = [Vampire, Vampire, Vampire];
+		//const aiTypes = [Undead, Vampire, Daemon];
+		this.aiTeam = generateTeam(aiTypes, 1, 2);
+		this.aiController = new AIController(this.playerTeam, this.aiTeam, this.gamePlay);
+	}
 	init() {
 		const container = document.getElementById("game-container");
 		const { boardSize } = this.gamePlay;
@@ -25,12 +30,8 @@ export default class GameController {
 		this.gamePlay.drawUi(themes.prairie);
 
 		const playerTypes = [Bowman, Swordsman, Magician];
-		//const aiTypes = [Undead, Vampire, Daemon];
-		const aiTypes = [Undead, Undead, Undead];
-		this.playerTeam = generateTeam(playerTypes, 3, 4);
-		this.aiTeam = generateTeam(aiTypes, 3, 4);
-		this.aiController = new AIController(this.playerTeam, this.aiTeam, this.gamePlay);
-
+		this.playerTeam = generateTeam(playerTypes, 3, 2);
+		this.createAI();
 		redrawCharactersPositions(
 			this.playerTeam.generateTeamPositions(true, boardSize),
 			this.aiTeam.generateTeamPositions(false, boardSize),
@@ -45,12 +46,39 @@ export default class GameController {
 		this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
 		this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
 	}
-
-	completeRound() {
-		redrawCharactersPositions(this.playerTeam.getTeamPositions(), this.aiTeam.getTeamPositions(), this.gamePlay);
-		this.aiController.doAction();
+	checkWinner() {
+		const { boardSize } = this.gamePlay;
+		const { characters: playerChars } = this.playerTeam;
+		if (!playerChars.length) {
+			GamePlay.showError("Вы проиграли!");
+			this.init();
+		} else if (!this.aiTeam.characters.length) {
+			playerChars.forEach(char => {
+				char.levelUp();
+			});
+			this.createAI();
+			redrawCharactersPositions(
+				this.playerTeam.generateTeamPositions(true, boardSize),
+				this.aiTeam.generateTeamPositions(false, boardSize),
+				this.gamePlay
+			);
+		} else {
+			redrawCharactersPositions(
+				this.playerTeam.getTeamPositions(),
+				this.aiTeam.getTeamPositions(),
+				this.gamePlay
+			);
+			return false;
+		}
+		return true;
 	}
-
+	completeRound() {
+		if (!this.checkWinner()) {
+			this.aiController.doAction().then(() => {
+				this.checkWinner();
+			});
+		}
+	}
 	onCellClick(position) {
 		const character = getCharacterByPosition(position, this.playerTeam.characters);
 		const { selectedCharacter } = this;
@@ -58,9 +86,7 @@ export default class GameController {
 		if (this.gamePlay.preventAction) {
 			return;
 		}
-		this.aiTeam.characters.forEach((char) => {
-			char.attacker = null;
-		});
+
 		if (character) {
 			if (selectedCharacter) {
 				this.gamePlay.deselectCell(selectedCharacter.position);
@@ -81,10 +107,7 @@ export default class GameController {
 				this.gamePlay.showDamage(position, damage).then(() => {
 					this.gamePlay.preventAction = false;
 
-					enemyCharacter.health -= damage;
-
-					enemyCharacter.attacker = selectedCharacter;
-
+					enemyCharacter.setHealth(enemyCharacter.health - damage);
 					this.gamePlay.deselectCell(enemyCharacter.position);
 					this.gamePlay.deselectCell(selectedCharacter.position);
 					this.selectedCharacter = null;

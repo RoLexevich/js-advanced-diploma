@@ -74,7 +74,7 @@ export function getDistanceBetweenPositions(position1, position2, boardSize) {
 }
 
 export function getCharacterTooltip(character) {
-	return `🎖${character.level} ⚔${character.attack} 🛡${character.defence} ❤${character.health}"`;
+	return `🎖${character.level} ⚔${character.attack} 🛡${character.defence} ❤${character.health}`;
 }
 
 export function getCharacterByPosition(position, characters) {

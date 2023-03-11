@@ -14,9 +14,8 @@ import { getRandomPosition } from "./utils";
  * ```
  * */
 export default class Team {
-	constructor(characters, name) {
+	constructor(characters) {
 		this.characters = characters;
-		this.name = name;
 
 		characters.forEach((character) => {
 			character.team = this;
