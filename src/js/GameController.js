@@ -2,50 +2,128 @@ import GamePlay from "./GamePlay";
 import AIController from "./AIController";
 import themes from "./themes";
 import cursors from "./cursors";
+import Team from "./Team";
 import {
 	getCharacterTooltip,
 	getCharacterByPosition,
 	redrawCharactersPositions,
 	getDamage,
-	getDistanceBetweenPositions,
+	capitalizeFirstLetter,
 } from "./utils";
 import { Bowman, Swordsman, Undead, Daemon, Magician, Vampire } from "./characters";
 import { generateTeam } from "./generators";
+import GameState from "./GameState";
+import GameStateService from "./GameStateService";
 
 export default class GameController {
 	constructor(gamePlay, stateService) {
 		this.gamePlay = gamePlay;
 		this.stateService = stateService;
 	}
-	createAI() {
+
+	createAI(aiTeam) {
 		const aiTypes = [Vampire, Vampire, Vampire];
-		//const aiTypes = [Undead, Vampire, Daemon];
-		this.aiTeam = generateTeam(aiTypes, 1, 2);
+		// const aiTypes = [Undead, Vampire, Daemon];
+		this.aiTeam = aiTeam || generateTeam(aiTypes, 1, 2);
+
 		this.aiController = new AIController(this.playerTeam, this.aiTeam, this.gamePlay);
 	}
-	init() {
+
+	init(playerTeam, aiTeam, theme = "prairie") {
 		const container = document.getElementById("game-container");
 		const { boardSize } = this.gamePlay;
-		this.gamePlay.bindToDOM(container);
-		this.gamePlay.drawUi(themes.prairie);
-
 		const playerTypes = [Bowman, Swordsman, Magician];
-		this.playerTeam = generateTeam(playerTypes, 3, 2);
-		this.createAI();
-		redrawCharactersPositions(
-			this.playerTeam.generateTeamPositions(true, boardSize),
-			this.aiTeam.generateTeamPositions(false, boardSize),
-			this.gamePlay
-		);
 
+		this.playerTeam = playerTeam || generateTeam(playerTypes, 3, 2);
+		this.createAI(aiTeam);
+
+		const playerPositions = playerTeam
+			? playerTeam.getTeamPositions()
+			: this.playerTeam.generateTeamPositions(true, boardSize);
+		const aiPositions = aiTeam ? aiTeam.getTeamPositions() : this.aiTeam.generateTeamPositions(false, boardSize);
+
+		this.gamePlay.bindToDOM(container);
+		this.setTheme(theme);
+		this.gameStateService = new GameStateService(localStorage);
+		redrawCharactersPositions(playerPositions, aiPositions, this.gamePlay);
+		window.ctr = this;
 		this.initGameListeners();
 	}
 
-	initGameListeners() {
-		this.gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
-		this.gamePlay.addCellClickListener(this.onCellClick.bind(this));
-		this.gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+	setTheme(theme) {
+		this.gamePlay.drawUi(themes[theme]);
+		this.currentTheme = theme;
 	}
+
+	getNextTheme() {
+		const { currentTheme } = this;
+		let showTheme = false;
+		let curTheme = "prairie";
+		for (const [property] of Object.entries(themes)) {
+			if (showTheme) {
+				curTheme = themes[property];
+				return curTheme;
+			}
+			if (property === currentTheme) {
+				showTheme = true;
+			}
+		}
+
+		return curTheme;
+	}
+
+	initGameListeners() {
+		const { gamePlay } = this;
+
+		gamePlay.cellEnterListeners = [];
+		gamePlay.cellClickListeners = [];
+		gamePlay.cellLeaveListeners = [];
+		gamePlay.newGameListeners = [];
+		gamePlay.loadGameListeners = [];
+		gamePlay.saveGameListeners = [];
+
+		gamePlay.addSaveGameListener(this.saveGame.bind(this));
+		gamePlay.addNewGameListener(this.init.bind(this));
+		gamePlay.addLoadGameListener(this.loadGame.bind(this));
+
+		gamePlay.addCellEnterListener(this.onCellEnter.bind(this));
+		gamePlay.addCellClickListener(this.onCellClick.bind(this));
+		gamePlay.addCellLeaveListener(this.onCellLeave.bind(this));
+	}
+
+	loadGame() {
+		const loadedData = this.gameStateService.load();
+		const classMap = {
+			bowman: Bowman,
+			swordsman: Swordsman,
+			magician: Magician,
+			undead: Undead,
+			vampire: Vampire,
+			daemon: Daemon,
+		};
+		const playerChars = loadedData.playerTeam.characters;
+		const aiChars = loadedData.aiTeam.characters;
+		const createTeam = (chars) =>
+			new Team(
+				chars.map((char) => {
+					const className = classMap[char.type];
+					const newChar = new className(char.level, false);
+					for (const [property] of Object.entries(char)) {
+						newChar[property] = char[property];
+					}
+					return newChar;
+				})
+			);
+		const playerTeam = createTeam(playerChars);
+		const aiTeam = createTeam(aiChars);
+		this.init(playerTeam, aiTeam, loadedData.theme);
+	}
+
+	saveGame() {
+		const copiedState = GameState.from(this);
+		this.gameStateService.save(copiedState);
+	}
+
 	checkWinner() {
 		const { boardSize } = this.gamePlay;
 		const { characters: playerChars } = this.playerTeam;
@@ -53,7 +131,8 @@ export default class GameController {
 			GamePlay.showError("Вы проиграли!");
 			this.init();
 		} else if (!this.aiTeam.characters.length) {
-			playerChars.forEach(char => {
+			this.setTheme(this.getNextTheme());
+			playerChars.forEach((char) => {
 				char.levelUp();
 			});
 			this.createAI();
@@ -72,6 +151,7 @@ export default class GameController {
 		}
 		return true;
 	}
+
 	completeRound() {
 		if (!this.checkWinner()) {
 			this.aiController.doAction().then(() => {
@@ -79,6 +159,7 @@ export default class GameController {
 			});
 		}
 	}
+
 	onCellClick(position) {
 		const character = getCharacterByPosition(position, this.playerTeam.characters);
 		const { selectedCharacter } = this;

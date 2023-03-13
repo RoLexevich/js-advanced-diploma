@@ -15,7 +15,7 @@ import { translateToMatrixCoordinate } from "./utils";
  * vampire
  */
 export default class Character {
-	constructor(level, type = "generic") {
+	constructor(level, type = "generic", autoCreate = false) {
 		this.level = level;
 		this.attack = 0;
 		this.defence = 0;
@@ -27,14 +27,12 @@ export default class Character {
 		if (new.target.name === "Character") {
 			throw new Error("Нельзя создавать экземпляр класса Character!");
 		}
-		this.updateOnInitLvl();
 	}
 
 	canInteractWithPosition(position, boardSize, property = "stepsNumber") {
 		const positionCoordinate = translateToMatrixCoordinate(position, boardSize);
 		const selfPositionCoordinate = translateToMatrixCoordinate(this.position, boardSize);
 		const distance = this[property];
-
 		return (
 			selfPositionCoordinate.x + distance >= positionCoordinate.x &&
 			selfPositionCoordinate.y + distance >= positionCoordinate.y &&
@@ -42,16 +40,20 @@ export default class Character {
 			selfPositionCoordinate.y - distance <= positionCoordinate.y
 		);
 	}
+
 	levelUp() {
-		this.level = this.level + 1;
+		this.level += 1;
 		this.updateAttrs();
 	}
+
 	updateAttrs() {
 		const health = 80 + this.health;
 
+		// eslint-disable-next-line radix
 		this.attack = parseInt(Math.max(this.attack, (this.attack * (80 + this.health)) / 100));
 		this.health = health > 100 ? 100 : health;
 	}
+
 	updateOnInitLvl() {
 		for (let index = 1; index < this.level; index++) {
 			this.updateAttrs();
