@@ -171,10 +171,6 @@ export default class GamePlay {
 	}
 
 	onSaveGameClick(event) {
-		console.log('');
-		console.log('PRINT event');
-		console.log(event);
-		console.log('++++++++++++++++++++++++++++++++++++++++++++++++');
 		event.preventDefault();
 		this.saveGameListeners.forEach((o) => o.call(null));
 	}

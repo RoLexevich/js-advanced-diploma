@@ -49,12 +49,9 @@ export default class Character {
 	updateAttrs() {
 		const health = 80 + this.health;
 
-		// eslint-disable-next-line radix
-		this.attack = parseInt(Math.max(this.attack, (this.attack * (80 + this.health)) / 100));
-		// eslint-disable-next-line radix
-		this.defence = parseInt(Math.max(this.defence, (this.defence * (80 + this.health)) / 100));
-
-		this.health = health > 100 ? 100 : health;
+		this.attack = Math.round(Math.max(this.attack, (this.attack * (80 + this.health)) / 100));
+		this.defence = Math.round(Math.max(this.defence, (this.defence * (80 + this.health)) / 100));
+		this.health = health > 100 ? 100 : Math.round(health);
 	}
 
 	updateOnInitLvl() {
