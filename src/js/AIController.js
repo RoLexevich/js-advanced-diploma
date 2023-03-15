@@ -1,5 +1,4 @@
 import {
-	redrawCharactersPositions,
 	getDamage,
 	getDistanceBetweenPositions,
 	translateToMatrixCoordinate,
@@ -70,38 +69,27 @@ export default class AIController {
 		const { boardSize } = this.gamePlay;
 		const matrixCoordinate1 = translateToMatrixCoordinate(position1, boardSize);
 		const matrixCoordinate2 = translateToMatrixCoordinate(position2, boardSize);
-		const diffX1X2 = Math.abs(matrixCoordinate1.x - matrixCoordinate2.x);
-		const diffY1Y2 = Math.abs(matrixCoordinate1.y - matrixCoordinate2.y);
-		let resultX = matrixCoordinate1.x;
-		let resultY = matrixCoordinate1.y;
+		const getResult = (axis) => {
+			const axisCoordinate1 = matrixCoordinate1[axis];
+			const axisCoordinate2 = matrixCoordinate2[axis];
+			const diff = Math.abs(axisCoordinate1 - axisCoordinate2);
+			let result = axisCoordinate1;
+			if (axisCoordinate1 > axisCoordinate2) {
+				if (stepsNumber >= diff) {
+					result = axisCoordinate2 + 1;
+				} else {
+					result = axisCoordinate1 - stepsNumber;
+				}
+			} else if (axisCoordinate1 < axisCoordinate2) {
+				if (stepsNumber >= diff) {
+					result = axisCoordinate2 - 1;
+				} else {
+					result = axisCoordinate1 + stepsNumber;
+				}
+			}
+			return result;
+		};
 
-		if (matrixCoordinate1.x > matrixCoordinate2.x) {
-			if (stepsNumber >= diffX1X2) {
-				resultX = matrixCoordinate2.x + 1;
-			} else {
-				resultX = matrixCoordinate1.x - stepsNumber;
-			}
-		} else if (matrixCoordinate1.x < matrixCoordinate2.x) {
-			if (stepsNumber >= diffX1X2) {
-				resultX = matrixCoordinate2.x - 1;
-			} else {
-				resultX = matrixCoordinate1.x + stepsNumber;
-			}
-		}
-
-		if (matrixCoordinate1.y > matrixCoordinate2.y) {
-			if (stepsNumber >= diffX1X2) {
-				resultY = matrixCoordinate2.y + 1;
-			} else {
-				resultY = matrixCoordinate1.y - stepsNumber;
-			}
-		} else if (matrixCoordinate1.y < matrixCoordinate2.y) {
-			if (stepsNumber >= diffY1Y2) {
-				resultY = matrixCoordinate2.y - 1;
-			} else {
-				resultY = matrixCoordinate1.y + stepsNumber;
-			}
-		}
-		return translateMatrixCoordinateToPosition(resultX, resultY, boardSize);
+		return translateMatrixCoordinateToPosition(getResult("x"), getResult("y"), boardSize);
 	}
 }

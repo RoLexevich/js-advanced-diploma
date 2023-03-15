@@ -60,7 +60,7 @@ export function calcTileType(index, boardSize) {
 	) {
 		position = "right";
 	}
-
+	
 	return position;
 }
 

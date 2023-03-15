@@ -6,7 +6,7 @@ export default class Magician extends Character {
 		this.attack = 10;
 		this.attackDistance = 4;
 		this.stepsNumber = 1;
-		this.defence = 40;
+		this.defence = 10;
 		if (autoCreate) {
 			this.updateOnInitLvl();
 		}

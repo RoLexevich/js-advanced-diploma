@@ -51,6 +51,9 @@ export default class Character {
 
 		// eslint-disable-next-line radix
 		this.attack = parseInt(Math.max(this.attack, (this.attack * (80 + this.health)) / 100));
+		// eslint-disable-next-line radix
+		this.defence = parseInt(Math.max(this.defence, (this.defence * (80 + this.health)) / 100));
+
 		this.health = health > 100 ? 100 : health;
 	}
 

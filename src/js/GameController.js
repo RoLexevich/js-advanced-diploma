@@ -22,9 +22,8 @@ export default class GameController {
 	}
 
 	createAI(aiTeam) {
-		const aiTypes = [Vampire, Vampire, Vampire];
-		// const aiTypes = [Undead, Vampire, Daemon];
-		this.aiTeam = aiTeam || generateTeam(aiTypes, 1, 2);
+		const aiTypes = [Undead, Vampire, Daemon];
+		this.aiTeam = aiTeam || generateTeam(aiTypes, 4, 4);
 
 		this.aiController = new AIController(this.playerTeam, this.aiTeam, this.gamePlay);
 	}
@@ -34,7 +33,7 @@ export default class GameController {
 		const { boardSize } = this.gamePlay;
 		const playerTypes = [Bowman, Swordsman, Magician];
 
-		this.playerTeam = playerTeam || generateTeam(playerTypes, 3, 2);
+		this.playerTeam = playerTeam || generateTeam(playerTypes, 4, 4);
 		this.createAI(aiTeam);
 
 		const playerPositions = playerTeam
@@ -152,7 +151,17 @@ export default class GameController {
 		return true;
 	}
 
+	deselectAllCell() {
+		const { boardSize } = this.gamePlay;
+		const boardLength = Math.pow(boardSize, 2);
+
+		for (let position = 0; position < boardLength; position++) {
+			this.gamePlay.deselectCell(position);
+		}
+	}
+
 	completeRound() {
+		this.deselectAllCell();
 		if (!this.checkWinner()) {
 			this.aiController.doAction().then(() => {
 				this.checkWinner();
